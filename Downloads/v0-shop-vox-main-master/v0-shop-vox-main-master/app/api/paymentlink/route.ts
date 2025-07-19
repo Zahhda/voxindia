@@ -1,3 +1,4 @@
+// app/api/paymentlink/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -7,30 +8,28 @@ export async function POST(req: NextRequest) {
   if (!CASHFREE_CLIENT_ID || !CASHFREE_CLIENT_SECRET) {
     return NextResponse.json({ error: "Missing Cashfree keys" }, { status: 500 });
   }
-if (req.method !== "POST") {
-  return NextResponse.json({ error: "Method Not Allowed" }, { status: 405 });
-}
-  const order_id = "ORD_" + Date.now();
+
+  const order_id = "ORDER_" + Date.now();
 
   const payload = {
-    order_id,
-    order_amount: body.totalAmount,
-    order_currency: "INR",
     customer_details: {
       customer_id: body.email,
       customer_email: body.email,
       customer_phone: body.phone,
       customer_name: body.fullName,
     },
+    order_id,
+    order_amount: body.totalAmount,
+    order_currency: "INR",
     order_note: "Payment for your purchase",
     order_meta: {
-      return_url: `https://shop.voxindia.co/checkout/success`,  // keep clean return
-      notify_url: `https://shop.voxindia.co/api/payment-webhook`,
+      return_url: `https://shop.voxindia.co/checkout/success?order_id=${order_id}`,
+      notify_url: "https://shop.voxindia.co/api/payment-webhook"
     },
   };
 
   try {
-    const response = await fetch("https://api.cashfree.com/pg/orders", {
+    const response = await fetch("https://api.cashfree.com/pg/links", {
       method: "POST",
       headers: {
         "x-client-id": CASHFREE_CLIENT_ID,
@@ -44,17 +43,14 @@ if (req.method !== "POST") {
     const result = await response.json();
 
     if (!response.ok) {
-      console.error("Cashfree API Error:", result);
+      console.error("❌ Cashfree Error:", result);
       return NextResponse.json({ error: "Cashfree API failed", details: result }, { status: 500 });
     }
-
-    console.log("✅ Payment Init Success:", result);
 
     return NextResponse.json({
       success: true,
       order_id,
-      order_token: result.order_token,
-      payment_link: result.payment_link,  // for redirecting
+      payment_link_url: result.payment_link,
     });
   } catch (err) {
     console.error("❌ Server error:", err);

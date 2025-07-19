@@ -1,4 +1,4 @@
-// app/checkout/page.tsx
+// ✅ Checkout Page UI and Payment Flow Updated
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -88,7 +88,7 @@ export default function CheckoutPage() {
         return;
       }
 
-      const res = await fetch("/api/initiate-payment", {
+      const res = await fetch("/api/paymentlink", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(orderPayload),
@@ -96,7 +96,7 @@ export default function CheckoutPage() {
 
       const data = await res.json();
 
-      if (data.payment_link) {
+      if (data.payment_link_url && data.order_id) {
         await fetch("/api/send-order-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -104,7 +104,7 @@ export default function CheckoutPage() {
         });
         clearCart();
         localStorage.removeItem("cart");
-        window.location.href = data.payment_link;
+        window.location.href = data.payment_link_url;
       } else {
         setError("Failed to initiate payment.");
         router.push("/checkout/failure?reason=payment_failed");
@@ -124,10 +124,11 @@ export default function CheckoutPage() {
 
   return (
     <div className="container max-w-6xl mx-auto py-10 px-4">
-      <h1 className="text-4xl font-bold mb-10 text-center">Checkout</h1>
+      <h1 className="text-4xl font-bold mb-10 text-center text-gradient bg-gradient-to-r from-purple-600 to-blue-500 text-transparent bg-clip-text">
+        Checkout
+      </h1>
       <div className="grid md:grid-cols-3 gap-6">
-        {/* Billing Form */}
-        <div className="md:col-span-2 bg-white p-6 rounded-xl shadow-lg border">
+        <div className="md:col-span-2 bg-white p-6 rounded-xl shadow-xl border">
           <h2 className="text-2xl font-semibold mb-4">Billing Information</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {(Object.entries(formData) as [keyof typeof formData, string][]).map(
@@ -137,9 +138,7 @@ export default function CheckoutPage() {
                   name={field}
                   value={value}
                   onChange={handleChange}
-                  placeholder={field
-                    .replace(/([A-Z])/g, " $1")
-                    .replace(/^./, (s) => s.toUpperCase())}
+                  placeholder={field.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase())}
                   required
                 />
               )
@@ -147,15 +146,11 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* Order Summary */}
-        <div className="bg-white p-6 rounded-xl shadow-lg border">
+        <div className="bg-white p-6 rounded-xl shadow-xl border">
           <h2 className="text-2xl font-semibold mb-4">Order Summary</h2>
           <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
             {cart.map((item) => (
-              <div
-                key={item.productId}
-                className="flex justify-between items-center gap-4"
-              >
+              <div key={item.productId} className="flex justify-between items-center gap-4">
                 <div className="flex items-center gap-3">
                   {item.image ? (
                     <Image
@@ -175,28 +170,14 @@ export default function CheckoutPage() {
                   )}
                   <div>
                     <p className="font-medium">{item.productName}</p>
-                    {item.colorName && (
-                      <p className="text-sm text-gray-600">
-                        Variant: {item.colorName}
-                      </p>
-                    )}
-                    {item.mode && (
-                      <p className="text-sm text-gray-600">Mode: {item.mode}</p>
-                    )}
+                    {item.colorName && <p className="text-sm text-gray-600">Variant: {item.colorName}</p>}
+                    {item.mode && <p className="text-sm text-gray-600">Mode: {item.mode}</p>}
                     <div className="flex items-center gap-2 mt-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => updateQuantity(item.productId, -1)}
-                      >
+                      <Button size="icon" variant="ghost" onClick={() => updateQuantity(item.productId, -1)}>
                         <Minus className="h-4 w-4" />
                       </Button>
                       <span>{item.quantity}</span>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => updateQuantity(item.productId, 1)}
-                      >
+                      <Button size="icon" variant="ghost" onClick={() => updateQuantity(item.productId, 1)}>
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
@@ -242,7 +223,7 @@ export default function CheckoutPage() {
           {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
 
           <Button
-            className="w-full bg-black text-white py-3 rounded-lg mt-2"
+            className="w-full bg-gradient-to-r from-green-500 to-blue-600 text-white py-3 rounded-lg mt-2 hover:opacity-90"
             onClick={handleSubmit}
             disabled={loading || cart.length === 0}
           >

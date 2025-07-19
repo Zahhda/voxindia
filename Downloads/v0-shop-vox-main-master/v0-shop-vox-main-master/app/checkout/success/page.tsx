@@ -1,3 +1,4 @@
+// app/checkout/success/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -5,33 +6,30 @@ import { useSearchParams } from "next/navigation";
 
 export default function SuccessPage() {
   const params = useSearchParams();
-  const [status, setStatus] = useState("Verifying payment...");
+  const [status, setStatus] = useState("Verifying your payment...");
 
   useEffect(() => {
-    const order_token = params.get("order_token");
-
-    if (order_token) {
-      fetch("/api/verify-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ order_token }),
-      })
+    const orderId = params.get("order_id");
+    if (orderId) {
+      fetch(`/api/verify-payment?order_id=${orderId}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.order_status === "PAID") {
             setStatus("✅ Payment successful! Thank you for your order.");
           } else {
-            setStatus("⚠️ Payment not completed. Please contact support.");
+            setStatus("⚠️ Payment not confirmed yet. We will update you soon.");
           }
         })
-        .catch(() => setStatus("❌ Failed to verify payment."));
+        .catch(() => {
+          setStatus("❌ Could not verify your payment. Please contact support.");
+        });
     }
   }, [params]);
 
   return (
     <div className="max-w-xl mx-auto text-center py-20">
       <h1 className="text-3xl font-bold mb-4">Order Confirmation</h1>
-      <p>{status}</p>
+      <p className="text-lg">{status}</p>
     </div>
   );
 }
