@@ -1,23 +1,23 @@
 // app/wall-panels/[collection]/page.tsx
-import { notFound, redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation';
+
 interface Color {
-  name: string
-  slug: string
-  hex: string
+  name: string;
+  slug: string;
+  hex: string;
 }
 
 interface CollectionData {
-  id: string
-  name: string
-  description: string
-  colors: Color[]
-  dimensions: { width: string; height: string; thickness: string }
-  features: string[]
-  price: number
-  sku: string
+  id: string;
+  name: string;
+  description: string;
+  colors: Color[];
+  dimensions: { width: string; height: string; thickness: string };
+  features: string[];
+  price: number;
+  sku: string;
 }
 
-// Mirror your collection → colors mapping:
 const collections: Record<string, CollectionData> = {
   "s-line": {
     id: "s-line",
@@ -94,20 +94,18 @@ const collections: Record<string, CollectionData> = {
 };
 
 export default async function Page({ params }: { params: { collection: string } }) {
-  // 1️⃣ Lookup the variant
-  const { collection } = await params;
+  const { collection } = params;
+  const coll = collections[collection];
 
+  if (!coll) return notFound();
 
-  const coll = collections[collection]
-  if (!coll) {
-    // Render your 404 page if the variant slug is invalid
-    return notFound()
-  }
+  const defaultColor = coll.colors[0].slug;
+  redirect(`/wall-panels/${collection}/${collection}-${defaultColor}`);
+}
 
-  // 2️⃣ Pick this variant’s first color as the “default”
-  const defaultColor = coll.colors[0].slug
-
-  // 3️⃣ Redirect; this throws the NEXT_REDIRECT signal internally
-  //    and Next.js will intercept it—no catch needed :contentReference[oaicite:0]{index=0}
-  redirect(`/wall-panels/${collection}/${collection}-${defaultColor}`)
+// ✅ Required for `output: export` in next.config.js
+export async function generateStaticParams() {
+  return Object.keys(collections).map((collection) => ({
+    collection,
+  }));
 }
