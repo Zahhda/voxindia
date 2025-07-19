@@ -1,45 +1,40 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json()
-    const orderId = `ORDER_${Date.now()}` // ✅ Use backticks for string interpolation
+export async function POST(req: NextRequest) {
+  const body = await req.json();
 
-    const response = await fetch("https://api.cashfree.com/pg/orders", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-client-id": process.env.CASHFREE_CLIENT_ID!,
-        "x-client-secret": process.env.CASHFREE_CLIENT_SECRET!,
-        "x-api-version": "2022-09-01",
-      },
-      body: JSON.stringify({
-        order_id: orderId,
-        order_amount: body.totalAmount,
-        order_currency: "INR",
-        customer_details: {
-          customer_id: body.email,
-          customer_email: body.email,
-          customer_phone: body.phone,
-        },
-        order_note: "Wall panel order from Linerio",
-        order_meta: {
-          return_url: `https://shop.voxindia.co/checkout/success?order_id=${orderId}`, // ✅ Correct string
-          notify_url: `https://shop.voxindia.co/api/payment-webhook`,
-        },
-      }),
-    })
+  const { CASHFREE_CLIENT_ID, CASHFREE_CLIENT_SECRET } = process.env;
 
-    const data = await response.json()
-
-    if (!response.ok || !data.payment_link_url) {
-      console.error("❌ Cashfree API Error:", data)
-      return NextResponse.json({ error: true, message: data.message || "Cashfree error" }, { status: 500 })
-    }
-
-    return NextResponse.json(data)
-  } catch (err) {
-    console.error("Error in initiating payment:", err)
-    return NextResponse.json({ error: true, message: "Server error" }, { status: 500 })
+  if (!CASHFREE_CLIENT_ID || !CASHFREE_CLIENT_SECRET) {
+    return NextResponse.json({ error: "Missing Cashfree keys" }, { status: 500 });
   }
+
+  const response = await fetch("https://api.cashfree.com/pg/links", {
+    method: "POST",
+    headers: {
+      "x-client-id": CASHFREE_CLIENT_ID,
+      "x-client-secret": CASHFREE_CLIENT_SECRET,
+      "Content-Type": "application/json",
+      "x-api-version": "2022-09-01",
+    },
+    body: JSON.stringify({
+      customer_details: {
+        customer_id: body.email,
+        customer_email: body.email,
+        customer_phone: body.phone,
+        customer_name: body.fullName,
+      },
+      order_amount: body.totalAmount,
+      order_currency: "INR",
+      order_id: "ORD_" + Date.now(),
+      order_note: "Payment for your purchase",
+      order_meta: {
+        return_url: "https://v0-shop.vercel.app/checkout/success?order_id={order_id}", // Replace with your domain
+      },
+    }),
+  });
+
+  const result = await response.json();
+
+  return NextResponse.json(result);
 }
