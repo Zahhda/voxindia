@@ -14,16 +14,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { cart, updateItemQuantity, removeFromCart, clearCart } = useCart();
 
-  const [formData, setFormData] = useState<{
-    fullName: string;
-    email: string;
-    phone: string;
-    addressLine1: string;
-    addressLine2: string;
-    city: string;
-    state: string;
-    zip: string;
-  }>({
+  const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     phone: "",
@@ -34,13 +25,12 @@ export default function CheckoutPage() {
     zip: "",
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<"cashfree" | "cod">("cashfree");
-  const [error, setError] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+  const [paymentMethod, setPaymentMethod] = useState("cashfree");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // Restore cart from localStorage if needed
   useEffect(() => {
     if (cart.length === 0) {
       const stored = localStorage.getItem("cart");
@@ -104,9 +94,9 @@ export default function CheckoutPage() {
         body: JSON.stringify(orderPayload),
       });
 
-      const data = (await res.json()) as { payment_link_url?: string };
+      const data = await res.json();
 
-      if (data.payment_link_url) {
+      if (data.payment_link) {
         await fetch("/api/send-order-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -114,7 +104,7 @@ export default function CheckoutPage() {
         });
         clearCart();
         localStorage.removeItem("cart");
-        window.location.href = data.payment_link_url;
+        window.location.href = data.payment_link;
       } else {
         setError("Failed to initiate payment.");
         router.push("/checkout/failure?reason=payment_failed");
