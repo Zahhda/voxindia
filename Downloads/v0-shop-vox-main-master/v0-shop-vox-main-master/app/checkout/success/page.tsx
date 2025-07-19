@@ -1,30 +1,37 @@
-// === File: app/checkout/success/page.tsx ===
-"use client"
+"use client";
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { CheckCircle } from "lucide-react"
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 export default function SuccessPage() {
-  const router = useRouter()
+  const params = useSearchParams();
+  const [status, setStatus] = useState("Verifying payment...");
 
   useEffect(() => {
-    localStorage.removeItem("cart")
-  }, [])
+    const order_token = params.get("order_token");
+
+    if (order_token) {
+      fetch("/api/verify-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order_token }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.order_status === "PAID") {
+            setStatus("✅ Payment successful! Thank you for your order.");
+          } else {
+            setStatus("⚠️ Payment not completed. Please contact support.");
+          }
+        })
+        .catch(() => setStatus("❌ Failed to verify payment."));
+    }
+  }, [params]);
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center text-center px-6 py-20">
-      <CheckCircle className="text-green-600 w-16 h-16 mb-6 animate-bounce" />
-      <h1 className="text-4xl font-bold text-green-700 mb-4">Payment Successful!</h1>
-      <p className="text-lg text-gray-600 mb-8">
-        Your order has been confirmed and we will get in touch with you shortly.
-      </p>
-      <button
-        onClick={() => router.push("/")}
-        className="px-6 py-3 rounded-lg bg-black text-white text-lg font-medium hover:opacity-90"
-      >
-        Back to Home
-      </button>
+    <div className="max-w-xl mx-auto text-center py-20">
+      <h1 className="text-3xl font-bold mb-4">Order Confirmation</h1>
+      <p>{status}</p>
     </div>
-  )
+  );
 }
