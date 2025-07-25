@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 import twilio from 'twilio';
-console.log("✅ MONGO ENV:", process.env.NEXT_PUBLIC_MONGODB_URI);
-
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const otpStore = global.otpStore || (global.otpStore = {});
 
